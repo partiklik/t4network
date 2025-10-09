@@ -1,11 +1,230 @@
+<!--
+ARG Secret Operation — single-file HTML template
+Black + green 'secret operation' aesthetic for an ARG (Minecraft-themed)
+Instructions:
+- Save this file as `index.html` inside your repo (e.g., 'coolstuff') and push to GitHub
+- Enable GitHub Pages for that repo (branch: main, folder: root)
+- The page is static and safe: it contains purely front-end effects and puzzle hooks
+
+Note: Do NOT use real hacking instructions or target real organizations. Keep puzzles fictional.
+-->
+
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <title>Hello GitHub Pages</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>OPERATION: OVERGROW — Access Terminal</title>
+  <style>
+    /* Basic reset */
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+
+    /* Background */
+    body{
+      background:#000;
+      color:#b6ff8a;
+      font-family: 'Courier New', Courier, monospace;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      overflow:hidden;
+    }
+
+    /* Matrix canvas covers whole screen */
+    #matrix{
+      position:fixed;left:0;top:0;width:100%;height:100%;z-index:0;opacity:0.12;
+    }
+
+    /* Center terminal card */
+    .terminal-wrap{
+      position:relative;z-index:2;min-width:320px;max-width:980px;margin:4vh auto;padding:28px;border-radius:12px;
+      background:linear-gradient(180deg, rgba(0,25,0,0.65), rgba(0,0,0,0.65));box-shadow:0 10px 40px rgba(0,255,0,0.04);
+      border:1px solid rgba(0,255,0,0.12);
+    }
+
+    header{display:flex;align-items:center;gap:16px;margin-bottom:14px}
+    .logo{width:64px;height:64px;border-radius:8px;background:linear-gradient(135deg,#001f00,#004400);display:flex;align-items:center;justify-content:center;box-shadow:inset 0 -6px 18px rgba(0,0,0,0.35)}
+    .logo span{font-weight:700;color:#b6ff8a}
+    h1{font-size:20px;letter-spacing:1px}
+    p.lead{color:#8fe07a;opacity:0.9}
+
+    /* Terminal output area */
+    .console{
+      background:rgba(0,0,0,0.5);border:1px solid rgba(0,255,0,0.06);padding:18px;border-radius:8px;min-height:220px;max-height:420px;overflow:auto;
+      font-size:15px;line-height:1.45;color:#cfffaa;
+    }
+
+    .prompt{color:#80ff6a}
+    .muted{color:#84a977;font-size:13px}
+
+    /* Controls */
+    .controls{display:flex;gap:8px;margin-top:12px}
+    .btn{background:transparent;border:1px solid rgba(0,255,0,0.16);padding:8px 12px;border-radius:6px;color:#b6ff8a;cursor:pointer}
+    .btn:hover{background:rgba(0,255,0,0.03)}
+
+    /* Hidden files / reveal */
+    .secret{display:none;margin-top:12px;padding:12px;border-radius:6px;border:1px dashed rgba(0,255,0,0.12);background:rgba(0,10,0,0.4)}
+    .secret.visible{display:block}
+
+    /* Neon flicker headline */
+    .neon{font-weight:700;text-shadow:0 0 8px rgba(0,255,0,0.25),0 0 18px rgba(0,255,0,0.06)}
+
+    /* Footer small */
+    footer{margin-top:14px;color:#6b8e5b;font-size:12px;display:flex;justify-content:space-between;align-items:center}
+
+    /* Responsive */
+    @media (max-width:520px){
+      .terminal-wrap{margin:2vh 12px;padding:16px}
+      h1{font-size:18px}
+    }
+
+    /* Small easter egg visual */
+    .glitch{
+      position:relative;display:inline-block;transform:translateZ(0);
+    }
+    .glitch:before,.glitch:after{
+      content:attr(data-text);position:absolute;left:0;top:0;opacity:0.8}
+    .glitch:before{color:#00ff55;z-index:-1;transform:translate(2px,-2px) skew(-6deg)}
+    .glitch:after{color:#0055ff;z-index:-2;transform:translate(-2px,2px) skew(6deg);opacity:0.06}
+
+    /* link style */
+    a{color:#b6ff8a;text-decoration:underline}
+
+  </style>
 </head>
 <body>
-    <h1>Hello World!</h1>
-    <p>Это мой первый сайт на GitHub Pages.</p>
+  <canvas id="matrix"></canvas>
+
+  <div class="terminal-wrap" role="main">
+    <header>
+      <div class="logo"><span>OP</span></div>
+      <div>
+        <h1 class="neon">OPERATION: OVERGROW</h1>
+        <p class="lead">Портал доступа — найдите ключ, чтобы освободить игроков</p>
+      </div>
+    </header>
+
+    <div class="console" id="console" aria-live="polite">
+      <div><span class="prompt">root@overgrow:~$</span> <span id="typed"></span><span class="cursor">█</span></div>
+      <div id="log" class="muted">-- system initialized — secure channel active</div>
+    </div>
+
+    <div class="controls">
+      <button class="btn" id="runHints">Запустить подсказку</button>
+      <button class="btn" id="reveal">Ввести код</button>
+      <button class="btn" id="download" title="Скачать фиктивный файл">Скачать пак (фейк)</button>
+    </div>
+
+    <div class="secret" id="secretBox">
+      <strong>CONTAINED LOG:</strong>
+      <pre style="white-space:pre-wrap;margin-top:8px">[2025-10-09 21:00] --- ACCESS_TOKEN: ███-***-4F2
+FLAG: {M1N3R_FR33D0M}
+HINT: look into the <em>map</em> on the server</pre>
+      <p class="muted">(Этот блок можно показать игрокам при вводе секретного кода.)</p>
+    </div>
+
+    <footer>
+      <div class="muted">dev: ARG build — статический прототип</div>
+      <div><a href="#" id="adminLink">/admin</a></div>
+    </footer>
+  </div>
+
+  <!-- Modal for code input (simple) -->
+  <div id="modal" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:9">
+    <div style="background:rgba(0,0,0,0.9);border:1px solid rgba(0,255,0,0.12);padding:18px;border-radius:10px;min-width:280px;max-width:420px;color:#b6ff8a">
+      <h3 style="margin-bottom:8px">Введите код доступа</h3>
+      <input id="codeInput" placeholder="код" style="width:100%;padding:8px;border-radius:6px;border:1px solid rgba(0,255,0,0.08);background:#001100;color:#b6ff8a;font-family:monospace;margin-bottom:10px">
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn" id="codeCancel">Отмена</button>
+        <button class="btn" id="codeSubmit">Отправить</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== matrix rain =====
+    const canvas = document.getElementById('matrix');
+    const ctx = canvas.getContext('2d');
+    let w = canvas.width = innerWidth;
+    let h = canvas.height = innerHeight;
+    const cols = Math.floor(w / 18) + 1;
+    const ypos = Array(cols).fill(0);
+
+    function matrixFrame(){
+      ctx.fillStyle = 'rgba(0,0,0,0.05)';
+      ctx.fillRect(0,0,w,h);
+      ctx.fillStyle = '#00ff55';
+      ctx.font = '14pt monospace';
+      for(let i=0;i<ypos.length;i++){
+        const text = String.fromCharCode(48 + Math.floor(Math.random()*42));
+        ctx.fillText(text, i*18, ypos[i]*18);
+        if(ypos[i]*18 > h && Math.random() > 0.975) ypos[i]=0;
+        ypos[i]++;
+      }
+    }
+    let matrixTimer = setInterval(matrixFrame,80);
+    addEventListener('resize',()=>{w=canvas.width=innerWidth;h=canvas.height=innerHeight});
+
+    // ===== typewriter for initial line =====
+    const typedEl = document.getElementById('typed');
+    const cursor = document.querySelector('.cursor');
+    const initial = 'Initializing secure relay...';
+    let idx=0;
+    function typeTick(){
+      if(idx < initial.length){
+        typedEl.textContent += initial[idx++];
+        setTimeout(typeTick, 45 + Math.random()*60);
+      } else {
+        cursor.style.opacity = '0';
+        // append follow-up log
+        const log = document.getElementById('log');
+        setTimeout(()=>{log.textContent = '-- handshake complete — awaiting credentials'; cursor.style.opacity='1';},600);
+      }
+    }
+    setTimeout(typeTick,400);
+
+    // ===== controls =====
+    document.getElementById('runHints').addEventListener('click',()=>{
+      const log = document.getElementById('log');
+      log.textContent = 'HINT: inspect the page source. Check comments and /admin (fake)';
+    });
+
+    document.getElementById('reveal').addEventListener('click',()=>{document.getElementById('modal').style.display='flex';document.getElementById('codeInput').focus();});
+    document.getElementById('codeCancel').addEventListener('click',()=>{document.getElementById('modal').style.display='none'});
+
+    document.getElementById('codeSubmit').addEventListener('click',()=>{
+      const v = document.getElementById('codeInput').value.trim();
+      if(v.toLowerCase() === 'overgrow' || v === 'M1N3R'){
+        document.getElementById('secretBox').classList.add('visible');
+        document.getElementById('modal').style.display='none';
+        document.getElementById('log').textContent = 'ACCESS GRANTED — view the contained log';
+      } else {
+        document.getElementById('log').textContent = 'ACCESS DENIED — invalid token';
+        document.getElementById('modal').style.display='none';
+      }
+    });
+
+    // Fake download: creates a small text blob for users
+    document.getElementById('download').addEventListener('click',()=>{
+      const blob = new Blob(["--PACKET\nFLAG: {M1N3R_FR33D0M}\nNOTE: это фиктивный файл для ARG."],{type:'text/plain'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'overgrow_packet.txt'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    });
+
+    // small easter: admin link toggles a fake overlay
+    document.getElementById('adminLink').addEventListener('click',(e)=>{
+      e.preventDefault();
+      const secret = document.getElementById('secretBox');
+      secret.classList.toggle('visible');
+      document.getElementById('log').textContent = secret.classList.contains('visible') ? 'admin: logs exposed' : 'admin: logs hidden';
+    });
+
+    // Accessibility: allow Enter to submit code
+    document.getElementById('codeInput').addEventListener('keydown',(e)=>{if(e.key==='Enter'){document.getElementById('codeSubmit').click()}});
+
+    // small random flicker for neon
+    setInterval(()=>{const h1=document.querySelector('h1'); if(Math.random()<0.06){h1.style.opacity='0.6'; setTimeout(()=>h1.style.opacity='1',120)}},400);
+
+  </script>
 </body>
 </html>
